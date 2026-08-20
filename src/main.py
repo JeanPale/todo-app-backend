@@ -7,50 +7,12 @@ from pydantic import BaseModel
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
-DATABASE_URL = "postgresql+psycopg://postgres:admin@127.0.0.1:15432/postgres"
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(bind=engine)
-
-class Base(DeclarativeBase):
-    id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid4()))
-
-class TaskORM(Base):
-    __tablename__ = "tasks"
-
-    title: Mapped[str]
-    completed: Mapped[bool] = mapped_column(default=False)
-
-class CategoryORM(Base):
-    __tablename__ = "categories"
-
-    name: Mapped[str]
-
-class TaskCreateSchema(BaseModel):
-    title: str
-
-class TaskSchema(TaskCreateSchema):
-    id: str
-    completed: bool
-
-class TaskUpdateSchema(BaseModel):
-    title: str | None = None
-    completed: bool | None = None
-
-class Book(BaseModel):
-    book: str
-
-class CategoryCreateSchema(BaseModel):
-    name: str
-
-class CategorySchema(CategoryCreateSchema):
-    id: str
-
-class CategoryUpdateSchema(BaseModel):
-    name: str | None = None
-
-book: str = "" # To prevent 500 error code
-
-categories: list[CategorySchema] = []
+from src.models.base import Base
+from src.models.task import TaskORM
+from src.models.category import CategoryORM
+from src.schemas.task import TaskSchema, TaskCreateSchema, TaskUpdateSchema
+from src.schemas.category import CategorySchema, CategoryCreateSchema, CategoryUpdateSchema
+from src.db.session import engine, SessionLocal, get_db
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -65,14 +27,6 @@ app.add_middleware(
     allow_methods=["*"],
 )
 
-
-def get_db():
-    db = SessionLocal()
-
-    try:
-        yield db
-    finally:
-        db.close()
 
 def task_orm_to_model(task_orm: TaskORM) -> TaskSchema:
     return TaskSchema(
@@ -121,17 +75,6 @@ def delete_task(task_id: str, db: Session = Depends(get_db)):
         db.commit()
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Task not found')
-
-# @app.post('/book', status_code=status.HTTP_201_CREATED)
-# def post_book(payload: Book, db: Session = Depends(get_db)) -> str:
-#     global book 
-#     book = payload.book
-#     return book
-# 
-# @app.get('/book')
-# def get_book(db: Session = Depends(get_db)):
-#     return f'Любимая книга: {book}'
-
 
 @app.get('/categories', response_model=list[CategorySchema])
 def get_categories(db: Session = Depends(get_db)) -> list[CategorySchema]:
