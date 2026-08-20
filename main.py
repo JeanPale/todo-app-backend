@@ -20,6 +20,11 @@ class TaskORM(Base):
     title: Mapped[str]
     completed: Mapped[bool] = mapped_column(default=False)
 
+class CategoryORM(Base):
+    __tablename__ = "categories"
+
+    name: Mapped[str]
+
 class TaskCreateSchema(BaseModel):
     title: str
 
@@ -73,7 +78,13 @@ def task_orm_to_model(task_orm: TaskORM) -> TaskSchema:
     return TaskSchema(
             id=task_orm.id,
             title=task_orm.title,
-            completed=task_orm.completed
+            completed=task_orm.completed,
+            )
+
+def category_orm_to_model(category_orm: CategoryORM) -> CategorySchema:
+    return CategorySchema(
+            id=category_orm.id,
+            name=category_orm.name,
             )
 
 @app.get('/tasks')
@@ -122,32 +133,36 @@ def delete_task(task_id: str, db: Session = Depends(get_db)):
 #     return f'Любимая книга: {book}'
 
 
-@app.get('/categories')
-def get_categories():
-    return categories
+@app.get('/categories', response_model=list[CategorySchema])
+def get_categories(db: Session = Depends(get_db)) -> list[CategorySchema]:
+    categories = db.scalars(select(CategoryORM)).all()
+    return [category_orm_to_model(category) for category in categories]
 
-@app.post('/categories', status_code=status.HTTP_201_CREATED)
-def create_category(payload: CategoryCreateSchema) -> CategorySchema:
-    new_category = CategorySchema(
-            id=str(uuid4()),
-            name=payload.name)
+@app.post('/categories', response_model=CategorySchema, status_code=status.HTTP_201_CREATED)
+def create_category(payload: CategoryCreateSchema, db: Session = Depends(get_db)) -> CategorySchema:
+    category = CategoryORM(name=payload.name)
 
-    categories.append(new_category)
-    return new_category
+    db.add(category)
+    db.commit()
 
-@app.patch('/categories/{category_id}')
-def update_category(category_id: str, payload: CategoryUpdateSchema):
-    for category in categories:
-        if category.id == category_id:
-            if payload.name:
-                category.name = payload.name
-            return category
+    return category_orm_to_model(category)
 
-@app.delete('/categories/{category_id}')
-def delete_category(category_id: str):
-    for category in categories:
-        if category.id == category_id:
-            categories.remove(category)
-            return
+@app.patch('/categories/{category_id}', response_model=CategorySchema)
+def update_category(category_id: str, payload: CategoryUpdateSchema, db: Session = Depends(get_db)):
+    category = db.get(CategoryORM, category_id)
+    if category is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
 
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Category not found')
+    category.name = payload.name if payload.name else category.name
+    db.commit()
+    
+    return category_orm_to_model(category)
+
+@app.delete('/categories/{category_id}', status_code=status.HTTP_204_NO_CONTENT)
+def delete_category(category_id: str, db: Session = Depends(get_db)) -> None:
+    category = db.get(CategoryORM, category_id)
+    if category is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
+
+    db.delete(category)
+    db.commit()
