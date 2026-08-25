@@ -1,12 +1,16 @@
+import os
 from dataclasses import dataclass
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 @dataclass(frozen=True)
 class Settings:
     database_url: str
     cors_allowed_origins: list[str]
 
-def get_settings() -> Settings:
-    return Settings(
-            database_url="postgresql+psycopg://postgres:admin@127.0.0.1:15432/postgres",
-            cors_allowed_origins=['http://localhost:3000'],
-            )
+settings = Settings(
+        database_url=os.environ["DATABASE_URL"],
+        cors_allowed_origins=os.environ["CORS_ALLOWED_ORIGINS"].split(','),
+)
