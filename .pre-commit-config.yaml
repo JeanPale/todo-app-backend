@@ -16,8 +16,8 @@ repos:
         types_or: [python]
 
       - id: mypy
-        name: mypy
-        entry: mypy
+        name: mypy --explicit-package-bases
+        entry: mypy --explicit-package-bases
         language: system
         pass_filenames: false
         types_or: [python]
