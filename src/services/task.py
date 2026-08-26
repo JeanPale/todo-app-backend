@@ -1,12 +1,14 @@
 from sqlalchemy.orm import Session
 
 from src.repositories.task import TaskRepository
-from src.schemas.task import TaskSchema, TaskCreateSchema, TaskUpdateSchema
+from src.schemas.task import TaskCreateSchema, TaskSchema, TaskUpdateSchema
+
 
 class TaskNotFound(Exception):
     pass
 
-class TaskService():
+
+class TaskService:
     def __init__(self, db: Session) -> None:
         self.db = db
         self.task_repository = TaskRepository(db)
@@ -21,19 +23,20 @@ class TaskService():
         self.db.commit()
         return TaskSchema.model_validate(task_orm)
 
-    def update_task(self, task_id: str, task_to_update: TaskUpdateSchema) -> TaskSchema:
+    def update_task(
+        self, task_id: str, task_to_update: TaskUpdateSchema
+    ) -> TaskSchema:
         task_to_update_orm = self.task_repository.get_by_id(task_id=task_id)
         if task_to_update_orm:
             if task_to_update.title is not None:
-                task_to_update_orm.title = task_to_update.title    
+                task_to_update_orm.title = task_to_update.title
             if task_to_update.completed is not None:
                 task_to_update_orm.completed = task_to_update.completed
 
             self.db.commit()
             return TaskSchema.model_validate(task_to_update_orm)
         else:
-            raise TaskNotFound(f'Task (id: {task_id}) not found')
-
+            raise TaskNotFound(f"Task (id: {task_id}) not found")
 
     def delete_task(self, task_id: str) -> None:
         task_to_delete_orm = self.task_repository.get_by_id(task_id=task_id)
@@ -41,5 +44,4 @@ class TaskService():
             self.task_repository.delete(task_to_delete_orm)
             self.db.commit()
         else:
-            raise TaskNotFound(f'Task (id: {task_id}) not found')
-
+            raise TaskNotFound(f"Task (id: {task_id}) not found")

@@ -1,9 +1,12 @@
 from collections.abc import Sequence
-from sqlalchemy import delete, select
+
+from sqlalchemy import select
 from sqlalchemy.orm import Session
+
 from src.models.task import TaskORM
 
-class TaskRepository():
+
+class TaskRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 

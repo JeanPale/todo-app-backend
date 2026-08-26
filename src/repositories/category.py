@@ -1,9 +1,12 @@
 from collections.abc import Sequence
-from sqlalchemy import delete, select
+
+from sqlalchemy import select
 from sqlalchemy.orm import Session
+
 from src.models.category import CategoryORM
 
-class CategoryRepository():
+
+class CategoryRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
