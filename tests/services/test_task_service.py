@@ -91,3 +91,16 @@ def test_update_task_raises_when_task_not_found(
         )
 
     db_mock.commit.assert_not_called()
+
+
+def test_delete_task_raises_when_task_not_found(
+    task_service: TaskService,
+    db_mock: Mock,
+    task_repository_mock: Mock,
+) -> None:
+    task_repository_mock.get_by_id.return_value = None
+
+    with pytest.raises(TaskNotFound):
+        task_service.delete_task("missing-task")
+
+    db_mock.commit.assert_not_called()

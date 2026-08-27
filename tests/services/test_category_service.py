@@ -93,3 +93,16 @@ def test_update_category_raises_when_category_not_found(
         )
 
     db_mock.commit.assert_not_called()
+
+
+def test_delete_category_raises_when_category_not_found(
+    category_service: CategoryService,
+    db_mock: Mock,
+    category_repository_mock: Mock,
+) -> None:
+    category_repository_mock.get_by_id.return_value = None
+
+    with pytest.raises(CategoryNotFound):
+        category_service.delete_category("missing-task")
+
+    db_mock.commit.assert_not_called()
